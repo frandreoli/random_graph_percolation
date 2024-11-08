@@ -12,13 +12,13 @@
 #define WIN_OS
 
 
-//DICHIARAZIONI STRUTTURE
+//Structure declaration
 struct connection{unsigned long long int n_bridges; int *bridges;};
 struct graph {struct graph *previous; unsigned long long int size; struct connection neigh;} *nodes;
 struct solution {double mean; double std_dev; double value[N_TRAJECTORIES];} read_smax, read_ssqmean;
 
 
-//VARIABILI GLOBALI
+//Global variables
 const unsigned long long int N=N_NODES;
 unsigned long long int M=0;
 unsigned long long int size_max;
@@ -26,61 +26,78 @@ unsigned long long int size_square_mean;
 double c=0.;
 
 
-//FUNZIONI
+//Functions
 void error(char *);
 void error(char *message){
-printf("\n\n%s.\n\n",message);
-exit(EXIT_FAILURE);}
+    printf("\n\n%s.\n\n",message);
+    exit(EXIT_FAILURE);
+}
 
 unsigned long long int uli_random(unsigned long long int, unsigned long long int);
 unsigned long long int uli_random(unsigned long long int a, unsigned long long int b){
-return a+((unsigned long long int)rand())%(b-a);}
+    return a+((unsigned long long int)rand())%(b-a);
+}
 
 void initialization(void);
 void initialization(void){
-int i;
-M=0;
-size_max=1;
-size_square_mean=N; 
-for(i=0; i<N; i++){
-nodes[i].previous=&(nodes[i]);
-nodes[i].size=1;
-nodes[i].neigh.n_bridges=0;}}
+    int i;
+    M=0;
+    size_max=1;
+    size_square_mean=N; 
+    for(i=0; i<N; i++){
+        nodes[i].previous=&(nodes[i]);
+        nodes[i].size=1;
+        nodes[i].neigh.n_bridges=0;
+    }
+}
 
 int check_bridge(unsigned long long int, unsigned long long int);
 int check_bridge(unsigned long long int node1, unsigned long long int node2){
-int i;
-for(i=0;i<nodes[node1].neigh.n_bridges;i++){
-if(nodes[node1].neigh.bridges[i]==node2) return F_FAILURE;}
-return F_SUCCESS;}
+    int i;
+    for(i=0;i<nodes[node1].neigh.n_bridges;i++){
+        if(nodes[node1].neigh.bridges[i]==node2) return F_FAILURE;
+    }
+    return F_SUCCESS;
+}
 
 void add_bridge(unsigned long long int, unsigned long long int);
 void add_bridge(unsigned long long int node1, unsigned long long int node2){
-int n_b1=++(nodes[node1].neigh.n_bridges);
-int n_b2=++(nodes[node2].neigh.n_bridges);
-nodes[node1].neigh.bridges=realloc(nodes[node1].neigh.bridges, n_b1*sizeof(int));
-nodes[node2].neigh.bridges=realloc(nodes[node2].neigh.bridges, n_b2*sizeof(int));
-nodes[node1].neigh.bridges[n_b1-1]=node2;
-nodes[node2].neigh.bridges[n_b2-1]=node1;}
+    int n_b1=++(nodes[node1].neigh.n_bridges);
+    int n_b2=++(nodes[node2].neigh.n_bridges);
+    nodes[node1].neigh.bridges=realloc(nodes[node1].neigh.bridges, n_b1*sizeof(int));
+    nodes[node2].neigh.bridges=realloc(nodes[node2].neigh.bridges, n_b2*sizeof(int));
+    nodes[node1].neigh.bridges[n_b1-1]=node2;
+    nodes[node2].neigh.bridges[n_b2-1]=node1;
+}
 
 struct graph *head(struct graph *);
 struct graph *head(struct graph *node){
-while(node->previous!=node) {node = node->previous;}
-return node;}
+while(node->previous!=node) {
+    node = node->previous;
+    }
+return node;
+}
 
 void cluster_develop(unsigned long long int, unsigned long long int);
 void cluster_develop(unsigned long long int node1, unsigned long long int node2){
-unsigned long long int new_size;
-struct graph *head1=head(&(nodes[node1]));
-struct graph *head2=head(&(nodes[node2]));
-M++;
-if(head1!=head2){
-new_size = head1->size + head2->size;
-if(new_size>size_max) size_max=new_size;
-size_square_mean+=2*(unsigned long long int)head1->size*head2->size;     
-if(head1->size>=head2->size) {head2->previous=head1; head1->size=new_size;}
-else {head1->previous=head2; head2->size=new_size;}
-}}
+    unsigned long long int new_size;
+    struct graph *head1=head(&(nodes[node1]));
+    struct graph *head2=head(&(nodes[node2]));
+    M++;
+    if(head1!=head2){
+        new_size = head1->size + head2->size;
+        if(new_size>size_max) size_max=new_size;
+        size_square_mean+=2*(unsigned long long int)head1->size*head2->size;     
+        if(head1->size>=head2->size) {
+            head2->previous=head1; 
+            head1->size=new_size;
+            }
+        else {
+            head1->previous=head2; 
+            head2->size=new_size;
+            }
+    }
+}
 
 void step(void);
 void step(void){
@@ -104,7 +121,7 @@ double std_dev_calc(struct solution sol){
 
 
 
-//MAIN
+//Main
 void main(){
     //Initializing variables
     int i=0, j=0, end_file;
