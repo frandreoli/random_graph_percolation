@@ -187,28 +187,34 @@ void main(){
             }while(temp!='\n');
         }
 
-    //Computing the average and standard deviations among trajectories
+    //Initializing the average and standard deviations among trajectories
     read_smax.mean=0.; 
     read_ssqmean.mean=0.; 
     read_smax.std_dev=0.; 
     read_ssqmean.std_dev=0.;
-    for(end_file=0; end_file!=EOF; read_smax.mean=0., read_ssqmean.mean=0., read_smax.std_dev=0., read_ssqmean.std_dev=0.){
-    /*scorro i file dati*/
-    end_file=fscanf(fp_array[0], "%Lf   %Lf    %Lf", &read_smax.value[0], &read_ssqmean.value[0], &c);
-    read_smax.mean+=read_smax.value[0];
-    read_ssqmean.mean+=read_ssqmean.value[0];
-    for(i=1;i<N_TRAJECTORIES;i++){
-    fscanf(fp_array[i], "%Lf   %Lf    %*f", &read_smax.value[i], &read_ssqmean.value[i]);
-    read_smax.mean+=read_smax.value[i];
-    read_ssqmean.mean+=read_ssqmean.value[i];}
-    /*calcolo media*/read_smax.mean/=(double)N_TRAJECTORIES;
-    read_ssqmean.mean/=(double)N_TRAJECTORIES;
-    /*calcolo dev std della media*/read_smax.std_dev=std_dev_calc(read_smax);
-    read_ssqmean.std_dev=std_dev_calc(read_ssqmean);
-    if(end_file!=EOF)
-    fprintf(fp_single, "%Lg  %Lg  %Lg  %Lg  %Lg\n", read_smax.mean, read_ssqmean.mean, c, read_smax.std_dev, read_ssqmean.std_dev);}
 
-    //Deleting the files with the trajectories only if instructed to do so
+    //Computing the average and standard deviations among trajectories
+    for(end_file=0; end_file!=EOF; read_smax.mean=0., read_ssqmean.mean=0., read_smax.std_dev=0., read_ssqmean.std_dev=0.){
+        //Scrolling the data files
+        end_file=fscanf(fp_array[0], "%Lf   %Lf    %Lf", &read_smax.value[0], &read_ssqmean.value[0], &c);
+        read_smax.mean+=read_smax.value[0];
+        read_ssqmean.mean+=read_ssqmean.value[0];
+        for(i=1;i<N_TRAJECTORIES;i++){
+            fscanf(fp_array[i], "%Lf   %Lf    %*f", &read_smax.value[i], &read_ssqmean.value[i]);
+            read_smax.mean+=read_smax.value[i];
+            read_ssqmean.mean+=read_ssqmean.value[i];
+        }
+        //Computing the average
+        read_smax.mean/=(double)N_TRAJECTORIES;
+        read_ssqmean.mean/=(double)N_TRAJECTORIES;
+        //Evaluating the std of the average
+        read_smax.std_dev=std_dev_calc(read_smax);
+        read_ssqmean.std_dev=std_dev_calc(read_ssqmean);
+        if(end_file!=EOF)
+        fprintf(fp_single, "%Lg  %Lg  %Lg  %Lg  %Lg\n", read_smax.mean, read_ssqmean.mean, c, read_smax.std_dev, read_ssqmean.std_dev);
+    }
+
+    //Deleting the files with the trajectories (only if instructed to do so)
     for(i=0;i<N_TRAJECTORIES;i++){
         fclose(fp_array[i]);
         #ifdef DELETE
