@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
+#define INT_TYPE unsigned /*long long*/ int
 #define N_NODES 100000
 #define SEED 1651265127
 #define F_FAILURE -1
@@ -13,16 +14,16 @@
 
 
 //Structure declaration
-struct connection{unsigned long long int n_bridges; int *bridges;};
-struct graph {struct graph *previous; unsigned long long int size; struct connection neigh;} *nodes;
+struct connection{INT_TYPE n_bridges; INT_TYPE *bridges;};
+struct graph {struct graph *previous; INT_TYPE size; struct connection neigh;} *nodes;
 struct solution {double mean; double std_dev; double value[N_TRAJECTORIES];} read_smax, read_ssqmean;
 
 
 //Global variables
-const unsigned long long int N=N_NODES;
-unsigned long long int M=0;
-unsigned long long int size_max;
-unsigned long long int size_square_mean;
+const INT_TYPE N=N_NODES;
+INT_TYPE M=0;
+INT_TYPE size_max;
+INT_TYPE size_square_mean;
 double c=0.;
 
 
@@ -33,10 +34,18 @@ void error(char *message){
     exit(EXIT_FAILURE);
 }
 
-unsigned long long int uli_random(unsigned long long int, unsigned long long int);
-unsigned long long int uli_random(unsigned long long int a, unsigned long long int b){
-    return a+((unsigned long long int)rand())%(b-a);
+INT_TYPE uli_random(INT_TYPE, INT_TYPE);
+INT_TYPE uli_random(INT_TYPE a, INT_TYPE b){
+    int i = 0;
+    int resolution = 100;
+    unsigned int final_drand=0;
+    for(i=0;i<resolution;i++){
+        final_drand+=rand();
+    }
+    return (INT_TYPE)(a+(final_drand)%(b-a));
 }
+
+
 
 void initialization(void);
 void initialization(void){
@@ -51,8 +60,8 @@ void initialization(void){
     }
 }
 
-int check_bridge(unsigned long long int, unsigned long long int);
-int check_bridge(unsigned long long int node1, unsigned long long int node2){
+int check_bridge(INT_TYPE, INT_TYPE);
+int check_bridge(INT_TYPE node1, INT_TYPE node2){
     int i;
     for(i=0;i<nodes[node1].neigh.n_bridges;i++){
         if(nodes[node1].neigh.bridges[i]==node2) return F_FAILURE;
@@ -60,15 +69,15 @@ int check_bridge(unsigned long long int node1, unsigned long long int node2){
     return F_SUCCESS;
 }
 
-void add_bridge(unsigned long long int, unsigned long long int);
-void add_bridge(unsigned long long int node1, unsigned long long int node2){
+void add_bridge(INT_TYPE, INT_TYPE);
+void add_bridge(INT_TYPE node1, INT_TYPE node2){
     //Pre-incrementing ++() the number of neighbouring bridges 
     //and then assigning the value to the temporary variables n_b1 and n_b2
-    int n_b1=++(nodes[node1].neigh.n_bridges);
-    int n_b2=++(nodes[node2].neigh.n_bridges);
+    INT_TYPE n_b1=++(nodes[node1].neigh.n_bridges);
+    INT_TYPE n_b2=++(nodes[node2].neigh.n_bridges);
     //Adding memory to account for the new bridges
-    nodes[node1].neigh.bridges=realloc(nodes[node1].neigh.bridges, n_b1*sizeof(int));
-    nodes[node2].neigh.bridges=realloc(nodes[node2].neigh.bridges, n_b2*sizeof(int));
+    nodes[node1].neigh.bridges=realloc(nodes[node1].neigh.bridges, n_b1*sizeof(INT_TYPE));
+    nodes[node2].neigh.bridges=realloc(nodes[node2].neigh.bridges, n_b2*sizeof(INT_TYPE));
     //Adding the new bridges
     nodes[node1].neigh.bridges[n_b1-1]=node2;
     nodes[node2].neigh.bridges[n_b2-1]=node1;
@@ -82,16 +91,16 @@ while(node->previous!=node) {
 return node;
 }
 
-void cluster_develop(unsigned long long int, unsigned long long int);
-void cluster_develop(unsigned long long int node1, unsigned long long int node2){
-    unsigned long long int new_size;
+void cluster_develop(INT_TYPE, INT_TYPE);
+void cluster_develop(INT_TYPE node1, INT_TYPE node2){
+    INT_TYPE new_size;
     struct graph *head1=head(&(nodes[node1]));
     struct graph *head2=head(&(nodes[node2]));
     M++;
     if(head1!=head2){
         new_size = head1->size + head2->size;
         if(new_size>size_max) size_max=new_size;
-        size_square_mean+=2*(unsigned long long int)head1->size*head2->size;     
+        size_square_mean+=2*(INT_TYPE)head1->size*head2->size;     
         if(head1->size>=head2->size) {
             head2->previous=head1; 
             head1->size=new_size;
@@ -106,7 +115,7 @@ void cluster_develop(unsigned long long int node1, unsigned long long int node2)
 void step(void);
 void step(void){
     //Stepp to add a new bridge between two random nodes that were not already connected
-    unsigned long long int node1=uli_random(0,N), node2;
+    INT_TYPE node1=uli_random(0,N), node2;
     do{
         node2=uli_random(0,N);
         } while(node1==node2 || check_bridge(node1,node2)==F_FAILURE);
@@ -165,7 +174,7 @@ void main(){
         //Saving the trajectory data in the data matrix
         for(c=0.;c<1.;){
             step();
-            fprintf(fp_single,"%g   %g  %g\n", (double)size_max/N, (double)(size_square_mean-(unsigned long long int)size_max*size_max)/N, c);
+            fprintf(fp_single,"%g   %g  %g\n", (double)size_max/N, (double)(size_square_mean-(INT_TYPE)size_max*size_max)/N, c);
             }
         //Closing the file
         fclose(fp_single);
