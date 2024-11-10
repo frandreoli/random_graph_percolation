@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-#define N_NODES 10000
+#define N_NODES 100000
 #define SEED 1651265127
 #define F_FAILURE -1
 #define F_SUCCESS 0
@@ -62,10 +62,14 @@ int check_bridge(unsigned long long int node1, unsigned long long int node2){
 
 void add_bridge(unsigned long long int, unsigned long long int);
 void add_bridge(unsigned long long int node1, unsigned long long int node2){
+    //Pre-incrementing ++() the number of neighbouring bridges 
+    //and then assigning the value to the temporary variables n_b1 and n_b2
     int n_b1=++(nodes[node1].neigh.n_bridges);
     int n_b2=++(nodes[node2].neigh.n_bridges);
+    //Adding memory to account for the new bridges
     nodes[node1].neigh.bridges=realloc(nodes[node1].neigh.bridges, n_b1*sizeof(int));
     nodes[node2].neigh.bridges=realloc(nodes[node2].neigh.bridges, n_b2*sizeof(int));
+    //Adding the new bridges
     nodes[node1].neigh.bridges[n_b1-1]=node2;
     nodes[node2].neigh.bridges[n_b2-1]=node1;
 }
@@ -101,13 +105,17 @@ void cluster_develop(unsigned long long int node1, unsigned long long int node2)
 
 void step(void);
 void step(void){
+    //Stepp to add a new bridge between two random nodes that were not already connected
     unsigned long long int node1=uli_random(0,N), node2;
     do{
         node2=uli_random(0,N);
         } while(node1==node2 || check_bridge(node1,node2)==F_FAILURE);
+    //Adding the bridge
     add_bridge(node1,node2);
+    //Updating the cluster to account for the new bridge
     cluster_develop(node1,node2);
-    c=2.*((double)M/N);
+    //Updating the "average degree" of the graph (c = M/N), i.e. the average number of bridges
+    c=((double)M/N);
 }
 
 double std_dev_calc(struct solution);
@@ -155,9 +163,9 @@ void main(){
         //Saving the labels of the data matrix
         fprintf(fp_single,"#Smax       S^2mean       c\n");
         //Saving the trajectory data in the data matrix
-        for(c=0;c<2;){
+        for(c=0.;c<1.;){
             step();
-            fprintf(fp_single,"%g        %g        %g\n", (double)size_max/N, (double)(size_square_mean-(unsigned long long int)size_max*size_max)/N, c);
+            fprintf(fp_single,"%g   %g  %g\n", (double)size_max/N, (double)(size_square_mean-(unsigned long long int)size_max*size_max)/N, c);
             }
         //Closing the file
         fclose(fp_single);
@@ -179,8 +187,8 @@ void main(){
     //Opening the file with the average quantities in write mode
     if((fp_single=fopen(f_string, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results.");
     //Saving the labels of the data matrix
-    fprintf(fp_single,"#Smax_mean          <S^2>_mean          c           dev_Smax_mean       dev_<S^2>_mean\n");
-    //Reading the trajectories
+    fprintf(fp_single,"Smax_mean,<S^2>_mean,c,dev_Smax_mean,dev_<S^2>_mean\n");
+    //Placing the reading buffer to the end of the first line
     for(i=0;i<N_TRAJECTORIES;i++){
         do{
             fscanf(fp_array[i],"%c",&temp);
@@ -211,7 +219,7 @@ void main(){
         read_smax.std_dev=std_dev_calc(read_smax);
         read_ssqmean.std_dev=std_dev_calc(read_ssqmean);
         if(end_file!=EOF)
-        fprintf(fp_single, "%Lg  %Lg  %Lg  %Lg  %Lg\n", read_smax.mean, read_ssqmean.mean, c, read_smax.std_dev, read_ssqmean.std_dev);
+        fprintf(fp_single,"%Lg,%Lg,%Lg,%Lg,%Lg\n", read_smax.mean, read_ssqmean.mean, c, read_smax.std_dev, read_ssqmean.std_dev);
     }
 
     //Deleting the files with the trajectories (only if instructed to do so)
