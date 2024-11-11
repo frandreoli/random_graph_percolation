@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<math.h>
 #define INT_TYPE unsigned /*long long*/ int
-#define N_NODES 100000
+//#define N_NODES 100000
 #define SEED 1651265127
 #define F_FAILURE -1
 #define F_SUCCESS 0
@@ -17,14 +17,6 @@
 struct connection{INT_TYPE n_bridges; INT_TYPE *bridges;};
 struct graph {struct graph *previous; INT_TYPE size; struct connection neigh;} *nodes;
 struct solution {double mean; double std_dev; double value[N_TRAJECTORIES];} read_smax, read_ssqmean;
-
-
-//Global variables
-const INT_TYPE N=N_NODES;
-INT_TYPE M=0;
-INT_TYPE size_max;
-INT_TYPE size_square_mean;
-double c=0.;
 
 
 //Functions
@@ -45,14 +37,9 @@ INT_TYPE uli_random(INT_TYPE a, INT_TYPE b){
     return (INT_TYPE)(a+(final_drand)%(b-a));
 }
 
-
-
-void initialization(void);
-void initialization(void){
+void initialization(INT_TYPE);
+void initialization(INT_TYPE N){
     int i;
-    M=0;
-    size_max=1;
-    size_square_mean=N; 
     for(i=0; i<N; i++){
         nodes[i].previous=&(nodes[i]);
         nodes[i].size=1;
@@ -91,16 +78,15 @@ while(node->previous!=node) {
 return node;
 }
 
-void cluster_develop(INT_TYPE, INT_TYPE);
-void cluster_develop(INT_TYPE node1, INT_TYPE node2){
+void cluster_develop(INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE *);
+void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE M, INT_TYPE *size_array){
     INT_TYPE new_size;
     struct graph *head1=head(&(nodes[node1]));
     struct graph *head2=head(&(nodes[node2]));
-    M++;
     if(head1!=head2){
         new_size = head1->size + head2->size;
-        if(new_size>size_max) size_max=new_size;
-        size_square_mean+=2*(INT_TYPE)head1->size*head2->size;     
+        if(new_size>size_array[0]) size_array[0]=new_size;
+        size_array[1]+=2*(INT_TYPE)head1->size*head2->size;     
         if(head1->size>=head2->size) {
             head2->previous=head1; 
             head1->size=new_size;
@@ -112,8 +98,8 @@ void cluster_develop(INT_TYPE node1, INT_TYPE node2){
     }
 }
 
-void step(void);
-void step(void){
+void step(INT_TYPE, INT_TYPE, INT_TYPE *);
+void step(INT_TYPE N, INT_TYPE M, INT_TYPE *size_array){
     //Stepp to add a new bridge between two random nodes that were not already connected
     INT_TYPE node1=uli_random(0,N), node2;
     do{
@@ -122,9 +108,7 @@ void step(void){
     //Adding the bridge
     add_bridge(node1,node2);
     //Updating the cluster to account for the new bridge
-    cluster_develop(node1,node2);
-    //Updating the "average degree" of the graph (c = M/N), i.e. the average number of bridges
-    c=((double)M/N);
+    cluster_develop(node1,node2, M,size_array);
 }
 
 double std_dev_calc(struct solution);
@@ -137,13 +121,22 @@ double std_dev_calc(struct solution sol){
 }
 
 
-
 //Main
-void main(){
+void main(int argc, char **argv){
+    
     //Initializing variables
     int i=0, j=0, end_file;
     FILE **fp_array, *fp_single;
     char f_string[20], temp;
+    INT_TYPE N = 1000;
+    INT_TYPE M = 0;
+    double c = 0.;
+    //Defining a size array with [size_max, size_square_mean]
+    INT_TYPE size_array[2];
+    size_array[0]=1;
+    size_array[1]=N;
+
+    //Initializing options
     #ifdef SEED
     srand(SEED);
     #endif
@@ -157,14 +150,21 @@ void main(){
         {sprintf(rm_string, "rm");}
     #endif
 
+    //Starting the code
+    printf("\n\nRandom graph analysis with N = %d nodes.\n\n",N);
+
     //Allocating memory
     nodes=(struct graph *)calloc(N, sizeof(struct graph));
     fp_array=(FILE **)calloc(N_TRAJECTORIES, sizeof(FILE *));
 
     //Calculating the values for each trajectory
     for(i=0;i<N_TRAJECTORIES;i++){
+        //Initializing parameters
+        M = 0;
+        size_array[0] = 1;
+        size_array[1] = N; 
         //Initializing the graph
-        initialization();
+        initialization(N);
         //Choosing the file name to store the trajectory data 
         sprintf(f_string,"Data\\graph%d.dat",i);
         //Opening the file to store the trajectory data 
@@ -173,8 +173,10 @@ void main(){
         fprintf(fp_single,"#Smax       S^2mean       c\n");
         //Saving the trajectory data in the data matrix
         for(c=0.;c<1.;){
-            step();
-            fprintf(fp_single,"%g   %g  %g\n", (double)size_max/N, (double)(size_square_mean-(INT_TYPE)size_max*size_max)/N, c);
+            step(N,M,size_array);
+            M++;
+            c=((double)M/N);
+            fprintf(fp_single,"%g   %g  %g\n", (double)size_array[0]/N, (double)(size_array[1]-(INT_TYPE)size_array[0]*size_array[0])/N, c);
             }
         //Closing the file
         fclose(fp_single);
