@@ -17,7 +17,7 @@
 struct connection{INT_TYPE n_bridges; INT_TYPE *bridges;};
 struct graph {struct graph *previous; INT_TYPE size; struct connection neigh;} *nodes;
 struct solution {double mean; double std_dev; double value[N_TRAJECTORIES];} read_smax, read_ssqmean;
-
+//nodes is a pointer, so keep in mind that &(*node) == node
 
 //Functions
 void error(char *);
@@ -29,8 +29,11 @@ void error(char *message){
 INT_TYPE uli_random(INT_TYPE, INT_TYPE);
 INT_TYPE uli_random(INT_TYPE a, INT_TYPE b){
     int i = 0;
-    int resolution = 100;
-    unsigned int final_drand=0;
+    int resolution = 1000;
+    if(b-a>RAND_MAX*resolution){
+        error("The resolution inside uli_random() is too small, please increase it.");
+    }
+    unsigned long int final_drand=0;
     for(i=0;i<resolution;i++){
         final_drand+=rand();
     }
@@ -72,10 +75,11 @@ void add_bridge(INT_TYPE node1, INT_TYPE node2){
 
 struct graph *head(struct graph *);
 struct graph *head(struct graph *node){
-while(node->previous!=node) {
-    node = node->previous;
-    }
-return node;
+    //node->previous is the same as (*node).previous
+    while(node->previous!=node) {
+        node = node->previous;
+        }
+    return node;
 }
 
 void cluster_develop(INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE *);
@@ -146,11 +150,19 @@ void main(int argc, char **argv){
     //Initializing variables
     int i=0, j=0, end_file;
     FILE **fp_array, *fp_single;
-    char f_string[20], temp;
-    INT_TYPE N = input_read(argv[1]);
+    char buffer_str[60], temp;
+    const INT_TYPE N = input_read(argv[1]);
     char *data_dir = argv[2];
     INT_TYPE M = 0;
     double c = 0.;
+    double c_max = 1.;
+    INT_TYPE c_points = 10000;
+    INT_TYPE N_step = round(N*(c_max/c_points));
+    if(N_step<1){
+        N_step = 1;
+        c_points = round(N*(c_max/N_step));
+    }
+
     //Defining a size array with [size_max, size_square_mean]
     INT_TYPE size_array[2];
     size_array[0]=1;
@@ -171,7 +183,7 @@ void main(int argc, char **argv){
     #endif
 
     //Starting the code
-    printf("\n\nRandom graph analysis with N = %d nodes.\n\n",N);
+    printf("\n\nRandom graph analysis with N = %d nodes.\nThe ratio M/N is computed up to M/N = %g, with %d points.\n\n",N,c_max,c_points);
 
     //Allocating memory
     nodes=(struct graph *)calloc(N, sizeof(struct graph));
@@ -186,17 +198,19 @@ void main(int argc, char **argv){
         //Initializing the graph
         initialization(N);
         //Choosing the file name to store the trajectory data 
-        sprintf(f_string,"%sgraph%d.dat",data_dir,i);
+        sprintf(buffer_str,"%sTemp\\N%d_traj_%d.dat",data_dir,N,i);
         //Opening the file to store the trajectory data 
-        if((fp_single=fopen(f_string,"w+"))==NULL) error("ERROR: I cannot open (w+) the data files to store the trajectories.");
+        if((fp_single=fopen(buffer_str,"w+"))==NULL) error("ERROR: I cannot open (w+) the data files to store the trajectories.");
         //Saving the labels of the data matrix
         fprintf(fp_single,"#Smax       S^2mean       c\n");
         //Saving the trajectory data in the data matrix
-        for(c=0.;c<1.;){
+        for(c=0.;c<c_max;){
             step(N,M,size_array);
             M++;
             c=((double)M/N);
-            fprintf(fp_single,"%g   %g  %g\n", (double)size_array[0]/N, (double)(size_array[1]-(INT_TYPE)size_array[0]*size_array[0])/N, c);
+            if(M%N_step==0){
+                fprintf(fp_single,"%g   %g  %g\n", (double)size_array[0]/N, (double)(size_array[1]-(INT_TYPE)size_array[0]*size_array[0])/N, c);
+            }
             }
         //Closing the file
         fclose(fp_single);
@@ -205,18 +219,18 @@ void main(int argc, char **argv){
     //Opening the trajectory files in read only mode
     for(i=0;i<N_TRAJECTORIES;i++){
         //Defining the file name
-        sprintf(f_string,"%sgraph%d.dat",data_dir,i);
+        sprintf(buffer_str,"%sTemp\\N%d_traj_%d.dat",data_dir,N,i);
         //Opening and checking open result
-        if((fp_array[i]=fopen(f_string,"r"))==NULL){
-            printf("\n\nFILE ERROR: %s",f_string); 
+        if((fp_array[i]=fopen(buffer_str,"r"))==NULL){
+            printf("\n\nFILE ERROR: %s",buffer_str); 
             error("ERROR: I cannot open (r) the trajectory files to read them.");
             }
     }
 
     //Defining the file name of the file where the average quantities willl be saved
-    sprintf(f_string,"%sg_mean_%d.dat",data_dir,N);
+    sprintf(buffer_str,"%sg_mean_%d.dat",data_dir,N);
     //Opening the file with the average quantities in write mode
-    if((fp_single=fopen(f_string, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results.");
+    if((fp_single=fopen(buffer_str, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results.");
     //Saving the labels of the data matrix
     fprintf(fp_single,"Smax_mean,<S^2>_mean,c,dev_Smax_mean,dev_<S^2>_mean\n");
     //Placing the reading buffer to the end of the first line
@@ -252,15 +266,16 @@ void main(int argc, char **argv){
         if(end_file!=EOF)
         fprintf(fp_single,"%Lg,%Lg,%Lg,%Lg,%Lg\n", read_smax.mean, read_ssqmean.mean, c, read_smax.std_dev, read_ssqmean.std_dev);
     }
+    fclose(fp_single);
 
     //Deleting the files with the trajectories (only if instructed to do so)
     for(i=0;i<N_TRAJECTORIES;i++){
         fclose(fp_array[i]);
         #ifdef DELETE
-        sprintf(f_string,"%s Data\\graph%d.dat",rm_string, i);
-        if(system(f_string)==-1) error("ERROR: I cannot delete the trajectory files");
+            sprintf(buffer_str,"%s %sTemp\\N%d_traj_%d.dat",rm_string,data_dir,N, i);
+            printf(buffer_str);
+            if(system(buffer_str)==-1) error("ERROR: I cannot delete the trajectory files");
         #endif
     }
-    fclose(fp_single);
 
 }
