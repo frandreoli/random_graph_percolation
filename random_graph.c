@@ -6,7 +6,7 @@
 #define SEED 1651265127
 #define F_FAILURE -1
 #define F_SUCCESS 0
-#define N_TRAJECTORIES 200
+#define N_TRAJECTORIES 500
 //Uncomment or comment the following line if you want to respectively delete or keep the trajectory files
 #define DELETE
 //Uncomment the following line if you work in Windows
@@ -26,19 +26,31 @@ void error(char *message){
     exit(EXIT_FAILURE);
 }
 
-INT_TYPE uli_random(INT_TYPE, INT_TYPE);
-INT_TYPE uli_random(INT_TYPE a, INT_TYPE b){
-    int i = 0;
-    int resolution = 1000;
-    if(b-a>RAND_MAX*resolution){
-        error("The resolution inside uli_random() is too small, please increase it.");
-    }
-    unsigned long int final_drand=0;
-    for(i=0;i<resolution;i++){
-        final_drand+=rand();
-    }
-    return (INT_TYPE)(a+(final_drand)%(b-a));
+INT_TYPE uli_random(INT_TYPE, INT_TYPE, INT_TYPE);
+INT_TYPE uli_random(INT_TYPE a, INT_TYPE b, INT_TYPE rand_bits_max){
+    //Working in windows we are forced to use rand(), which has a low RAND_MAX = 32000 =2^15
+    //To get larger ranges, the following, naive approach would not work, due to the central limit 
+    //theorem (the distribution of the sum of uniformly distributed variables tends to a Gaussian)
+    /*
+        int i = 0;
+        unsigned long int final_drand=0;
+        for(i=0;i<rand_bits_max;i++){
+            final_drand+=rand();
+        }
+        return (INT_TYPE)round(a+(b-a)*(double)final_drand/((double)RAND_MAX*rand_bits_max));
+        return (INT_TYPE)(a+(final_drand)%(b-a));
+    */
+    //To bypass this, we notice that a uniformly sampled integer is the same as uniformly sampling each
+    //of its bits. Sampling each bit, however, is not efficient, and might introduce entropy bias
+    //if (as I expect) rand() is not an amazing rng. We can, however, bitwise combine two rand() numbers
+    //to extend the range up to 2^30. To do so, we make use of the fact that the OR operation between
+    //two uniformly sampled bits is still a uniformly sampled bit.
+    unsigned int rand_1 = (unsigned int)rand();
+    unsigned int rand_2 = (unsigned int)rand();
+    unsigned int rand_enlarged = (rand_1 << 15) | rand_2;
+    return (INT_TYPE)(a+(rand_enlarged)%(b-a));
 }
+
 
 void initialization(INT_TYPE);
 void initialization(INT_TYPE N){
@@ -82,8 +94,8 @@ struct graph *head(struct graph *node){
     return node;
 }
 
-void cluster_develop(INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE *);
-void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE M, INT_TYPE *size_array){
+void cluster_develop(INT_TYPE, INT_TYPE, INT_TYPE *);
+void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE *size_array){
     INT_TYPE new_size;
     struct graph *head1=head(&(nodes[node1]));
     struct graph *head2=head(&(nodes[node2]));
@@ -102,17 +114,17 @@ void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE M, INT_TYPE *size_
     }
 }
 
-void step(INT_TYPE, INT_TYPE, INT_TYPE *);
-void step(INT_TYPE N, INT_TYPE M, INT_TYPE *size_array){
+void step(INT_TYPE, INT_TYPE *, INT_TYPE);
+void step(INT_TYPE N, INT_TYPE *size_array, INT_TYPE rand_bits_max){
     //Stepp to add a new bridge between two random nodes that were not already connected
-    INT_TYPE node1=uli_random(0,N), node2;
+    INT_TYPE node1=uli_random(0,N, rand_bits_max), node2;
     do{
-        node2=uli_random(0,N);
+        node2=uli_random(0,N, rand_bits_max);
         } while(node1==node2 || check_bridge(node1,node2)==F_FAILURE);
     //Adding the bridge
     add_bridge(node1,node2);
     //Updating the cluster to account for the new bridge
-    cluster_develop(node1,node2, M,size_array);
+    cluster_develop(node1,node2, size_array);
 }
 
 double std_dev_calc(struct solution);
@@ -152,6 +164,22 @@ void main(int argc, char **argv){
     FILE **fp_array, *fp_single;
     char buffer_str[60], temp;
     const INT_TYPE N = input_read(argv[1]);
+    //The following exploits the fact that divisions between integers are automatically rounded
+    const INT_TYPE rand_bits_max = round(log10(RAND_MAX)/log10(2.0));
+
+    //Uncomment the following to test the rng
+    /*fp_single=fopen("TEST.dat","w+");
+    printf("N = %d, RAND_MAX = %d, rand_bits_max = %d", N, RAND_MAX, rand_bits_max);
+    INT_TYPE list_res[40000];
+    fprintf(fp_single,"{");
+    for(i=0;i<40000;i++){
+        list_res[i]=uli_random(0,N,rand_bits_max);
+        fprintf(fp_single,"%d,",list_res[i]);
+    }
+    fprintf(fp_single,"}");
+    fclose(fp_single);
+    error("OKOK");*/
+
     char *data_dir = argv[2];
     INT_TYPE M = 0;
     double c = 0.;
@@ -205,7 +233,7 @@ void main(int argc, char **argv){
         fprintf(fp_single,"#Smax       S^2mean       c\n");
         //Saving the trajectory data in the data matrix
         for(c=0.;c<c_max;){
-            step(N,M,size_array);
+            step(N,size_array,rand_bits_max);
             M++;
             c=((double)M/N);
             if(M%N_step==0){
