@@ -148,6 +148,7 @@ void main(int argc, char **argv){
     FILE **fp_array, *fp_single;
     char f_string[20], temp;
     INT_TYPE N = input_read(argv[1]);
+    char *data_dir = argv[2];
     INT_TYPE M = 0;
     double c = 0.;
     //Defining a size array with [size_max, size_square_mean]
@@ -185,7 +186,7 @@ void main(int argc, char **argv){
         //Initializing the graph
         initialization(N);
         //Choosing the file name to store the trajectory data 
-        sprintf(f_string,"Data\\graph%d.dat",i);
+        sprintf(f_string,"%sgraph%d.dat",data_dir,i);
         //Opening the file to store the trajectory data 
         if((fp_single=fopen(f_string,"w+"))==NULL) error("ERROR: I cannot open (w+) the data files to store the trajectories.");
         //Saving the labels of the data matrix
@@ -204,7 +205,7 @@ void main(int argc, char **argv){
     //Opening the trajectory files in read only mode
     for(i=0;i<N_TRAJECTORIES;i++){
         //Defining the file name
-        sprintf(f_string,"Data//graph%d.dat",i);
+        sprintf(f_string,"%sgraph%d.dat",data_dir,i);
         //Opening and checking open result
         if((fp_array[i]=fopen(f_string,"r"))==NULL){
             printf("\n\nFILE ERROR: %s",f_string); 
@@ -213,7 +214,7 @@ void main(int argc, char **argv){
     }
 
     //Defining the file name of the file where the average quantities willl be saved
-    sprintf(f_string,"Data//g_mean_%d.dat",N);
+    sprintf(f_string,"%sg_mean_%d.dat",data_dir,N);
     //Opening the file with the average quantities in write mode
     if((fp_single=fopen(f_string, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results.");
     //Saving the labels of the data matrix
