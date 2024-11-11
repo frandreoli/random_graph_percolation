@@ -120,6 +120,25 @@ double std_dev_calc(struct solution sol){
     return std_dev/sqrtl((double)(N_TRAJECTORIES)); 
 }
 
+INT_TYPE input_read(char *);
+INT_TYPE input_read(char *input_N){
+    char *error_string;
+    char *end_pointer;
+    INT_TYPE N = 0;
+    N = strtol(input_N, &end_pointer, 10);
+    if (end_pointer == input_N) {
+        error("No digits found, when decoding the input number N of nodes.\n");
+    } else if (*end_pointer != '\0') {
+        sprintf(error_string, "Invalid digit %c found, when decoding the input number N of nodes.\n", *end_pointer);
+        error(error_string);
+    }
+    if(N>2){
+        return N;
+    } else {
+        error("The number of nodes N must be larger than 2.");
+    }
+}
+
 
 //Main
 void main(int argc, char **argv){
@@ -128,7 +147,7 @@ void main(int argc, char **argv){
     int i=0, j=0, end_file;
     FILE **fp_array, *fp_single;
     char f_string[20], temp;
-    INT_TYPE N = 1000;
+    INT_TYPE N = input_read(argv[1]);
     INT_TYPE M = 0;
     double c = 0.;
     //Defining a size array with [size_max, size_square_mean]
