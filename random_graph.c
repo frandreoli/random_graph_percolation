@@ -47,7 +47,7 @@ INT_TYPE uli_random(INT_TYPE a, INT_TYPE b, INT_TYPE rand_bits_max){
     //two uniformly sampled bits is still a uniformly sampled bit.
     unsigned int rand_1 = (unsigned int)rand();
     unsigned int rand_2 = (unsigned int)rand();
-    unsigned int rand_enlarged = (rand_1 << 15) | rand_2;
+    unsigned int rand_enlarged = (rand_1 << rand_bits_max) | rand_2;
     return (INT_TYPE)(a+(rand_enlarged)%(b-a));
 }
 
