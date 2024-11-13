@@ -2,11 +2,10 @@
 #include<stdlib.h>
 #include<math.h>
 #define INT_TYPE unsigned /*long long*/ int
-//#define N_NODES 100000
 #define SEED 1651265127
 #define F_FAILURE -1
 #define F_SUCCESS 0
-#define N_TRAJECTORIES 500
+#define N_TRAJECTORIES 509
 //Uncomment or comment the following line if you want to respectively delete or keep the trajectory files
 #define DELETE
 //Uncomment the following line if you work in Windows
@@ -17,7 +16,7 @@
 struct connection{INT_TYPE n_bridges; INT_TYPE *bridges;};
 struct graph {struct graph *previous; INT_TYPE size; struct connection neigh;} *nodes;
 struct solution {double mean; double std_dev; double value[N_TRAJECTORIES];} read_smax, read_ssqmean;
-//nodes is a pointer, so keep in mind that &(*node) == node
+//nodes is a pointer, so keep in mind that &(*node) == node is still a pointer
 
 //Functions
 void error(char *);
@@ -87,7 +86,11 @@ void add_bridge(INT_TYPE node1, INT_TYPE node2){
 
 struct graph *head(struct graph *);
 struct graph *head(struct graph *node){
-    //node->previous is the same as (*node).previous
+    //Keep in mind that node->previous is the same as (*node).previous
+    //i.e. it first dereferences node (which is a pointer to a struct graph) to access the
+    //struct graph *node, and then it returns its variable .previous
+    //Keep also in mind that node is always a local variable, which stores the pointer to a 
+    //struct graph
     while(node->previous!=node) {
         node = node->previous;
         }
@@ -96,31 +99,35 @@ struct graph *head(struct graph *node){
 
 void cluster_develop(INT_TYPE, INT_TYPE, INT_TYPE *);
 void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE *size_array){
+    //
     INT_TYPE new_size;
+    //Searching for the cluster-head of the two nodes
     struct graph *head1=head(&(nodes[node1]));
     struct graph *head2=head(&(nodes[node2]));
+    //If the two nodes belong to different clusters, then the clusters are merged
     if(head1!=head2){
         new_size = head1->size + head2->size;
         if(new_size>size_array[0]) size_array[0]=new_size;
         size_array[1]+=2*(INT_TYPE)head1->size*head2->size;     
+        //
         if(head1->size>=head2->size) {
             head2->previous=head1; 
             head1->size=new_size;
-            }
+        }
         else {
             head1->previous=head2; 
             head2->size=new_size;
-            }
+        }
     }
 }
 
 void step(INT_TYPE, INT_TYPE *, INT_TYPE);
 void step(INT_TYPE N, INT_TYPE *size_array, INT_TYPE rand_bits_max){
-    //Stepp to add a new bridge between two random nodes that were not already connected
+    //Step to add a new bridge between two random nodes that were not already connected
     INT_TYPE node1=uli_random(0,N, rand_bits_max), node2;
     do{
         node2=uli_random(0,N, rand_bits_max);
-        } while(node1==node2 || check_bridge(node1,node2)==F_FAILURE);
+    } while(node1==node2 || check_bridge(node1,node2)==F_FAILURE);
     //Adding the bridge
     add_bridge(node1,node2);
     //Updating the cluster to account for the new bridge
@@ -136,23 +143,21 @@ double std_dev_calc(struct solution sol){
     return std_dev/sqrtl((double)(N_TRAJECTORIES)); 
 }
 
-INT_TYPE input_read(char *);
-INT_TYPE input_read(char *input_N){
+INT_TYPE int_read(char *, char *);
+INT_TYPE int_read(char *input_N, char *name){
     char *error_string;
     char *end_pointer;
     INT_TYPE N = 0;
     N = strtol(input_N, &end_pointer, 10);
     if (end_pointer == input_N) {
-        error("No digits found, when decoding the input number N of nodes.\n");
+        printf("No digits found, when decoding the input value of %s.\n", name);
+        return -1;
     } else if (*end_pointer != '\0') {
-        sprintf(error_string, "Invalid digit %c found, when decoding the input number N of nodes.\n", *end_pointer);
-        error(error_string);
+        sprintf(error_string, "Invalid digit %c found, when decoding the input value of %s.\n", *end_pointer, name);
+        printf(error_string);
+        return -1;
     }
-    if(N>2){
-        return N;
-    } else {
-        error("The number of nodes N must be larger than 2.");
-    }
+    return N;
 }
 
 
@@ -163,11 +168,15 @@ void main(int argc, char **argv){
     int i=0, j=0, end_file;
     FILE **fp_array, *fp_single;
     char buffer_str[60], temp;
-    const INT_TYPE N = input_read(argv[1]);
+    const INT_TYPE N = int_read(argv[1],"N_nodes");
+    if(N<2){
+        error("The number of nodes N must be larger than 2.");
+    }
+    
     //The following exploits the fact that divisions between integers are automatically rounded
     const INT_TYPE rand_bits_max = round(log10(RAND_MAX)/log10(2.0));
-
-    //Uncomment the following to test the rng
+    
+    //Uncomment the following lines to test the rng and exit
     /*fp_single=fopen("TEST.dat","w+");
     printf("N = %d, RAND_MAX = %d, rand_bits_max = %d", N, RAND_MAX, rand_bits_max);
     INT_TYPE list_res[40000];
@@ -178,8 +187,8 @@ void main(int argc, char **argv){
     }
     fprintf(fp_single,"}");
     fclose(fp_single);
-    error("OKOK");*/
-
+    error("Test completed. Exiting.");*/
+    
     char *data_dir = argv[2];
     INT_TYPE M = 0;
     double c = 0.;
@@ -211,7 +220,7 @@ void main(int argc, char **argv){
     #endif
 
     //Starting the code
-    printf("\n\nRandom graph analysis with N = %d nodes.\nThe ratio M/N is computed up to M/N = %g, with %d points.\n\n",N,c_max,c_points);
+    printf("\n\nRandom graph analysis with N = %d nodes.\nThe ratio M/N is computed up to M/N = %g, with %d points.\n",N,c_max,c_points);
 
     //Allocating memory
     nodes=(struct graph *)calloc(N, sizeof(struct graph));
@@ -226,7 +235,7 @@ void main(int argc, char **argv){
         //Initializing the graph
         initialization(N);
         //Choosing the file name to store the trajectory data 
-        sprintf(buffer_str,"%sTemp\\N%d_traj_%d.dat",data_dir,N,i);
+        sprintf(buffer_str,"%sTemp\\N%d_traj%d.dat",data_dir,N,i);
         //Opening the file to store the trajectory data 
         if((fp_single=fopen(buffer_str,"w+"))==NULL) error("ERROR: I cannot open (w+) the data files to store the trajectories.");
         //Saving the labels of the data matrix
@@ -247,18 +256,18 @@ void main(int argc, char **argv){
     //Opening the trajectory files in read only mode
     for(i=0;i<N_TRAJECTORIES;i++){
         //Defining the file name
-        sprintf(buffer_str,"%sTemp\\N%d_traj_%d.dat",data_dir,N,i);
+        sprintf(buffer_str,"%sTemp\\N%d_traj%d.dat",data_dir,N,i);
         //Opening and checking open result
         if((fp_array[i]=fopen(buffer_str,"r"))==NULL){
             printf("\n\nFILE ERROR: %s",buffer_str); 
-            error("ERROR: I cannot open (r) the trajectory files to read them.");
+            error("ERROR: I cannot open (r) the trajectory files to read them");
             }
     }
 
     //Defining the file name of the file where the average quantities willl be saved
     sprintf(buffer_str,"%sg_mean_%d.dat",data_dir,N);
     //Opening the file with the average quantities in write mode
-    if((fp_single=fopen(buffer_str, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results.");
+    if((fp_single=fopen(buffer_str, "w+"))==NULL) error("ERROR: I cannot open (w+) the file to store the average results");
     //Saving the labels of the data matrix
     fprintf(fp_single,"Smax_mean,<S^2>_mean,c,dev_Smax_mean,dev_<S^2>_mean\n");
     //Placing the reading buffer to the end of the first line
@@ -297,13 +306,18 @@ void main(int argc, char **argv){
     fclose(fp_single);
 
     //Deleting the files with the trajectories (only if instructed to do so)
+    #ifdef DELETE
+        printf("\nDeleting the trajectories.");
+    #endif
     for(i=0;i<N_TRAJECTORIES;i++){
         fclose(fp_array[i]);
         #ifdef DELETE
-            sprintf(buffer_str,"%s %sTemp\\N%d_traj_%d.dat",rm_string,data_dir,N, i);
-            printf(buffer_str);
+            sprintf(buffer_str,"%s %sTemp\\N%d_traj%d.dat",rm_string,data_dir,N, i);
             if(system(buffer_str)==-1) error("ERROR: I cannot delete the trajectory files");
         #endif
     }
+
+    //Printing the end
+    printf("\nCalculation completed correctly.");
 
 }
