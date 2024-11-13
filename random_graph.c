@@ -5,7 +5,7 @@
 #define SEED 1651265127
 #define F_FAILURE -1
 #define F_SUCCESS 0
-#define N_TRAJECTORIES 509
+#define N_TRAJECTORIES 10
 //Uncomment or comment the following line if you want to respectively delete or keep the trajectory files
 #define DELETE
 //Uncomment the following line if you work in Windows
@@ -109,7 +109,7 @@ void cluster_develop(INT_TYPE node1, INT_TYPE node2, INT_TYPE *size_array){
         new_size = head1->size + head2->size;
         if(new_size>size_array[0]) size_array[0]=new_size;
         size_array[1]+=2*(INT_TYPE)head1->size*head2->size;     
-        //
+        //The head of the largest cluster becomes the head of the merged one
         if(head1->size>=head2->size) {
             head2->previous=head1; 
             head1->size=new_size;
