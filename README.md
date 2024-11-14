@@ -10,4 +10,4 @@ We focus on a random graph of $N$ nodes, which can be pairwise connected by a br
 Given a number $N$ of nodes and a number $B$ of distinct, random bridges, we can define a cluster as an ensemble of nodes that are all connected by crossing one or more bridges (e.g. see the colored scheme in Fig. $a_1$). 
 
 
-<img src="https://github.com/user-attachments/assets/b91d77c0-82da-47fa-b299-592749ed0c87" alt="Alt Text" width="300" height="200">
+<img src="https://github.com/user-attachments/assets/b91d77c0-82da-47fa-b299-592749ed0c87" alt="Alt Text" width="582" height="450.2">
