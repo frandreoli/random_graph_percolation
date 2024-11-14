@@ -33,6 +33,7 @@ The simplest treatment of the problem is described in Fig.s $a_1$ and $a_2$. Nai
 
 ## 2.2 - Tree-search algorithm
 
+Instead of storing the global information in each single node of the cluster, this can be saved only into one single element, considered the head of the cluster (Fig.s $b_1$ and $b_2$). Then, each node conserves knowledge of only its neigbors (i.e. the node connected via a direct link, as shown by the solid black lines), and of which node introduced it into the cluster the first time (dashed, black lines). Then, when a new link between two nodes implies that two clusters must be merged (Fig. $b_2$), the number of required operations becomes much lower than the previous scenario. 
 
 # 3 - Numerical results
 
