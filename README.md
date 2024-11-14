@@ -22,7 +22,7 @@ The code computes the size of the largest custer as a function of an increasing 
 
 ## 2.1 - Simplest algorithm
 
-## 2.2 - Tree algorithm
+## 2.2 - Tree-search algorithm
 
 
 # 3 - Numerical results
