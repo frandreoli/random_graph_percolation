@@ -17,7 +17,8 @@ In the thermodinamic limit of $N\to \infty$, it is easy to see that a phase tran
 
 <br/>
 
-# 2 - The algorithm
+# 2 - The code
+The code computes the size of the largest custer as a function of an increasing number of random links $L$, for a fixed number of nodes $N$. To do so, at each step two random nodes are selected and, if they are not already linked, a new link is added, which merges their respective clusters into a new larger cluster. The main algorithmic issue concerns the storage and retrieval of the information about the size and nodes of each cluster, as well as the update of this information when two clusters are merged.
 
 ## 2.1 - Simplest algorithm
 
