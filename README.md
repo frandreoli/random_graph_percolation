@@ -39,7 +39,7 @@ Instead of storing the global information in each single node of the cluster, th
 
 # 3 - Numerical results
 
-In the plot below (Fig.s c and d), we report the simulation results. First, in Fig. c, we show the phase transition of the (normalized) maximal cluster size $S_{\rm max}/N$ as a function of the average node degree $\langle C\rangle = 2L/N$, which quantifies the average number of direct connections (i.e. neighbors) of each node. Each colored line identifies a scenario with an increasing number of nodes $N=10^2\div 10^7$. The plot exhibits a clear phase transition in the thermodinamic limit $N\to \infty$. Finally, in Fig. d, we plot the value of $S_{\rm max}/N$ computed at the transition point $\langle C\rangle=1$
+In the plot below (Fig.s c and d), we report the simulation results. First, in Fig. c, we show the phase transition of the (normalized) maximal cluster size $S_{\rm max}/N$ as a function of the average node degree $\langle C\rangle = 2L/N$, which quantifies the average number of direct connections (i.e. neighbors) of each node. Each colored line identifies a scenario with an increasing number of nodes $N=10^2\div 10^7$. The plot exhibits a clear phase transition in the thermodinamic limit $N\to \infty$. Finally, in Fig. d, we study the finite-size effects, by plotting the value of $S_{\rm max}/N$ computed at the transition point $\langle C\rangle=1$, given different values of $N$. By fitting the data in a log-log scale, one can infer the scaling $S_{\rm max}(\langle C\rangle=1)/N\approx 2/N$, i.e. $S_{\rm max}(\langle C\rangle=1)\approx 2$.  
 
 
 ![cluster_percolation_plots](https://github.com/user-attachments/assets/16a70883-8553-4f57-8030-d9f2b06a5f52)
