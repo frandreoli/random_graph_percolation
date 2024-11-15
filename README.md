@@ -37,3 +37,4 @@ Instead of storing the global information in each single node of the cluster, th
 
 # 3 - Numerical results
 
+![cluster_percolation_plots](https://github.com/user-attachments/assets/16a70883-8553-4f57-8030-d9f2b06a5f52)
